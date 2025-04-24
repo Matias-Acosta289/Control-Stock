@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Pedidos de Compra</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Fondo más suave */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* Sombras más suaves */
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #111827;
+            font-size: 24px;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+
+        .email {
+            font-size: 18px;
+            color: #555;
+            margin-bottom: 20px;
+        }
+
+        .button {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            background: linear-gradient(to right, #4f46e5, #3b82f6);
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+
+        .button:hover {
+            background: linear-gradient(to right, #4338ca, #2563eb);
+            transform: scale(1.05); /* Efecto de aumento al pasar el mouse */
+        }
+
+        .button:active {
+            transform: scale(1); /* Mantiene el tamaño cuando se presiona el botón */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Pedidos de Compra</h1>
+
+        <!-- Mostrar el correo del usuario -->
+        <div class="email" id="user-email"></div>
+
+        <a href="nuevo_pedido.html" class="button">Nuevo Pedido</a>
+        <a href="ver_pedidos.html" class="button">Ver Pedidos</a>
+    </div>
+
+    <script>
+        // Obtener el correo de la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const correo = urlParams.get('correo');
+
+        // Mostrar el correo en la página
+        if (correo) {
+            document.getElementById('user-email').textContent = `Bienvenido/a, ${correo}`;
+        } else {
+            document.getElementById('user-email').textContent = 'Correo no encontrado';
+        }
+    </script>
+</body>
+</html>

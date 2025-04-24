@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Ver Pedidos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb;
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #111827;
+            margin-bottom: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 16px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f3f4f6;
+            color: #374151;
+            font-weight: 600;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        td {
+            border-bottom: 1px solid #e5e7eb;
+            color: #4b5563;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .no-data {
+            text-align: center;
+            color: #6b7280;
+            margin-top: 50px;
+        }
+
+        select {
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid #d1d5db;
+            font-family: 'Inter', sans-serif;
+        }
+
+        @media (max-width: 768px) {
+            table, thead, tbody, th, td, tr {
+                display: block;
+            }
+
+            thead {
+                display: none;
+            }
+
+            td {
+                position: relative;
+                padding-left: 50%;
+                border: none;
+                border-bottom: 1px solid #e5e7eb;
+            }
+
+            td::before {
+                content: attr(data-label);
+                position: absolute;
+                left: 16px;
+                font-weight: 600;
+                color: #374151;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Lista de Pedidos</h1>
+    <div id="listaPedidos"></div>
+
+    <script>
+        const SUPABASE_URL = "https://lhtmdsevgkiravcucgmf.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxodG1kc2V2Z2tpcmF2Y3VjZ21mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU0OTU1MDcsImV4cCI6MjA2MTA3MTUwN30.DLXZ6D2JuLjiZc-2Y0ph7lVMWvpM7uvItD0ZGFoANQ0";
+
+        const formatNumber = (num) => {
+            return new Intl.NumberFormat('es-ES', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(num);
+        };
+
+        async function cargarPedidos() {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/pedidos?select=*&estado=eq.Pendiente&order=created_at.desc`, {
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                }
+            });
+
+            const pedidos = await response.json();
+            const lista = document.getElementById('listaPedidos');
+
+            if (pedidos.length === 0) {
+                lista.innerHTML = '<p class="no-data">No hay pedidos registrados.</p>';
+                return;
+            }
+
+            const table = document.createElement('table');
+            const thead = `
+                <thead>
+                    <tr>
+                        <th>Tejido</th>
+                        <th>Tipo/Color</th>
+                        <th>Cantidad</th>
+                        <th>Precio Costo</th>
+                        <th>Precio Venta</th>
+                        <th>Proveedor</th>
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+            `;
+            let tbody = '<tbody>';
+
+            pedidos.forEach(p => {
+                tbody += `
+                    <tr>
+                        <td data-label="Tejido">${p.tejido}</td>
+                        <td data-label="Tipo/Color">${p.tipocolor}</td>
+                        <td data-label="Cantidad">${formatNumber(p.cantidad)}</td>
+                        <td data-label="Precio Costo">$${formatNumber(p.costo)}</td>
+                        <td data-label="Precio Venta">$${formatNumber(p.venta)}</td>
+                        <td data-label="Proveedor">${p.proveedor}</td>
+                        <td data-label="Fecha">${new Date(p.created_at).toLocaleString()}</td>
+                        <td data-label="Estado">
+                            <select onchange="actualizarEstado('${p.id}', this.value)">
+                                <option value="Pendiente" ${p.estado === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                                <option value="Recepcionado" ${p.estado === 'Recepcionado' ? 'selected' : ''}>Recepcionado</option>
+                            </select>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody += '</tbody>';
+            table.innerHTML = thead + tbody;
+            lista.appendChild(table);
+        }
+
+        async function actualizarEstado(id, nuevoEstado) {
+            try {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/pedidos?id=eq.${id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify({ estado: nuevoEstado })
+                });
+
+                if (!res.ok) {
+                    alert('❌ Error al actualizar el estado.');
+                    console.error(await res.text());
+                }
+            } catch (err) {
+                console.error('Error:', err);
+                alert('❌ Hubo un problema al actualizar el estado.');
+            }
+        }
+
+        cargarPedidos();
+    </script>
+</body>
+</html>
