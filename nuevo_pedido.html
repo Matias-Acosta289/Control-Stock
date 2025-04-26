@@ -105,78 +105,77 @@
     </div>
 
     <script>
-        const SUPABASE_URL = "https://lhtmdsevgkiravcucgmf.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxodG1kc2V2Z2tpcmF2Y3VjZ21mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU0OTU1MDcsImV4cCI6MjA2MTA3MTUwN30.DLXZ6D2JuLjiZc-2Y0ph7lVMWvpM7uvItD0ZGFoANQ0";
+    const SUPABASE_URL = "https://lhtmdsevgkiravcucgmf.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxodG1kc2V2Z2tpcmF2Y3VjZ21mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU0OTU1MDcsImV4cCI6MjA2MTA3MTUwN30.DLXZ6D2JuLjiZc-2Y0ph7lVMWvpM7uvItD0ZGFoANQ0";
 
-        const form = document.getElementById('pedidoForm');
-        const mensaje = document.getElementById('mensaje');
-        const urlParams = new URLSearchParams(window.location.search);
-        const correo = urlParams.get('correo');
+    const form = document.getElementById('pedidoForm');
+    const mensaje = document.getElementById('mensaje');
+    const urlParams = new URLSearchParams(window.location.search);
+    const correo = urlParams.get('correo');
 
-        const formatoGs = (valor) => {
-            const limpio = valor.replace(/\D/g, '');
-            return new Intl.NumberFormat('es-PY', {
-                style: 'currency',
-                currency: 'PYG',
-                minimumFractionDigits: 0
-            }).format(limpio || 0);
-        };
+    const formatoGs = (valor) => {
+        const limpio = valor.replace(/\D/g, '');
+        return new Intl.NumberFormat('es-PY', {
+            style: 'currency',
+            currency: 'PYG',
+            minimumFractionDigits: 0
+        }).format(limpio || 0);
+    };
 
-        const limpiarNumero = (valor) => {
-            return parseFloat(valor.replace(/\D/g, '')) || 0;
-        };
+    const limpiarNumero = (valor) => {
+        return parseFloat(valor.replace(/\D/g, '')) || 0;
+    };
 
-        const costoInput = document.getElementById('precio_costo');
-        const ventaInput = document.getElementById('precio_venta');
+    const costoInput = document.getElementById('precio_costo');
+    const ventaInput = document.getElementById('precio_venta');
 
-        [costoInput, ventaInput].forEach(input => {
-            input.addEventListener('input', (e) => {
-                const pos = input.selectionStart;
-                const valor = e.target.value;
-                const limpio = valor.replace(/\D/g, '');
-                if (limpio) {
-                    e.target.value = formatoGs(limpio);
-                } else {
-                    e.target.value = '';
-                }
-                input.setSelectionRange(pos, pos);
-            });
+    // Aplicar formato solo al salir del campo
+    [costoInput, ventaInput].forEach(input => {
+        input.addEventListener('blur', () => {
+            input.value = formatoGs(input.value);
         });
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const data = {
-                tejido: form.tejido.value,
-                tipocolor: form.tipo_color.value,
-                cantidad: parseInt(form.cantidad.value),
-                costo: limpiarNumero(costoInput.value),
-                venta: limpiarNumero(ventaInput.value),
-                proveedor: form.proveedor.value,
-                login: correo
-            };
-
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/pedidos`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': SUPABASE_ANON_KEY,
-                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                    'Prefer': 'return=representation'
-                },
-                body: JSON.stringify(data)
-            });
-
-            if (response.ok) {
-                mensaje.textContent = '✅ Pedido guardado exitosamente';
-                mensaje.style.color = 'green';
-                form.reset();
-            } else {
-                mensaje.textContent = '❌ Error al guardar el pedido';
-                mensaje.style.color = 'red';
-                console.error(await response.text());
-            }
+        input.addEventListener('focus', () => {
+            // Quitar formato al volver a editar
+            input.value = limpiarNumero(input.value);
         });
-    </script>
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const data = {
+            tejido: form.tejido.value,
+            tipocolor: form.tipo_color.value,
+            cantidad: parseInt(form.cantidad.value),
+            costo: limpiarNumero(costoInput.value),
+            venta: limpiarNumero(ventaInput.value),
+            proveedor: form.proveedor.value,
+            login: correo
+        };
+
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/pedidos`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            mensaje.textContent = '✅ Pedido guardado exitosamente';
+            mensaje.style.color = 'green';
+            form.reset();
+        } else {
+            mensaje.textContent = '❌ Error al guardar el pedido';
+            mensaje.style.color = 'red';
+            console.error(await response.text());
+        }
+    });
+</script>
+
 </body>
 </html>
