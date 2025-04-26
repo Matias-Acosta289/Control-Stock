@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nuevo Pedido</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
@@ -11,17 +12,18 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 20px;
         }
 
         .form-container {
             background-color: white;
-            padding: 40px;
+            padding: 40px 20px;
             border-radius: 12px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-            max-width: 500px;
             width: 100%;
+            max-width: 500px;
         }
 
         h2 {
@@ -43,6 +45,7 @@
             margin-top: 5px;
             border: 1px solid #d1d5db;
             border-radius: 8px;
+            font-size: 1rem;
         }
 
         button {
@@ -55,6 +58,7 @@
             border: none;
             border-radius: 8px;
             cursor: pointer;
+            font-size: 1rem;
         }
 
         button:hover {
@@ -64,6 +68,12 @@
         .message {
             text-align: center;
             margin-top: 15px;
+        }
+
+        @media (max-width: 480px) {
+            .form-container {
+                padding: 30px 15px;
+            }
         }
     </style>
 </head>
@@ -81,10 +91,10 @@
             <input type="number" id="cantidad" name="cantidad" required>
 
             <label for="precio_costo">Precio de Costo</label>
-            <input type="number" step="0.01" id="precio_costo" name="precio_costo" required>
+            <input type="text" id="precio_costo" name="precio_costo" required>
 
             <label for="precio_venta">Precio de Venta</label>
-            <input type="number" step="0.01" id="precio_venta" name="precio_venta" required>
+            <input type="text" id="precio_venta" name="precio_venta" required>
 
             <label for="proveedor">Proveedor</label>
             <input type="text" id="proveedor" name="proveedor" required>
@@ -102,16 +112,46 @@
         const mensaje = document.getElementById('mensaje');
         const urlParams = new URLSearchParams(window.location.search);
         const correo = urlParams.get('correo');
+
+        const formatoGs = (valor) => {
+            const limpio = valor.replace(/\D/g, '');
+            return new Intl.NumberFormat('es-PY', {
+                style: 'currency',
+                currency: 'PYG',
+                minimumFractionDigits: 0
+            }).format(limpio || 0);
+        };
+
+        const limpiarNumero = (valor) => {
+            return parseFloat(valor.replace(/\D/g, '')) || 0;
+        };
+
+        const costoInput = document.getElementById('precio_costo');
+        const ventaInput = document.getElementById('precio_venta');
+
+        [costoInput, ventaInput].forEach(input => {
+            input.addEventListener('input', (e) => {
+                const pos = input.selectionStart;
+                const valor = e.target.value;
+                const limpio = valor.replace(/\D/g, '');
+                if (limpio) {
+                    e.target.value = formatoGs(limpio);
+                } else {
+                    e.target.value = '';
+                }
+                input.setSelectionRange(pos, pos);
+            });
+        });
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-
 
             const data = {
                 tejido: form.tejido.value,
                 tipocolor: form.tipo_color.value,
                 cantidad: parseInt(form.cantidad.value),
-                costo: parseFloat(form.precio_costo.value),
-                venta: parseFloat(form.precio_venta.value),
+                costo: limpiarNumero(costoInput.value),
+                venta: limpiarNumero(ventaInput.value),
                 proveedor: form.proveedor.value,
                 login: correo
             };
