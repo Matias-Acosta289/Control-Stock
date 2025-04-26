@@ -23,8 +23,6 @@
         }
 
         button {
-            display: block;
-            margin: 0 auto 30px auto;
             padding: 10px 20px;
             border-radius: 8px;
             border: none;
@@ -32,6 +30,7 @@
             color: white;
             font-weight: 600;
             cursor: pointer;
+            margin: 10px 5px;
         }
 
         table {
@@ -77,6 +76,19 @@
             font-family: 'Inter', sans-serif;
         }
 
+        .filtros-fecha {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .filtros-fecha input {
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid #d1d5db;
+            font-family: 'Inter', sans-serif;
+            margin: 0 5px;
+        }
+
         @media (max-width: 768px) {
             table, thead, tbody, th, td, tr {
                 display: block;
@@ -105,7 +117,17 @@
 </head>
 <body>
     <h1>Lista de Pedidos</h1>
-    <button onclick="descargarPDF()">Descargar PDF</button>
+
+    <div style="text-align: center;">
+        <button onclick="descargarPDF()">Descargar PDF</button>
+    </div>
+
+    <div class="filtros-fecha">
+        <label>Desde: <input type="date" id="fechaDesde"></label>
+        <label>Hasta: <input type="date" id="fechaHasta"></label>
+        <button onclick="descargarPDFporFechas()">Descargar informe en intervalo de fechas</button>
+    </div>
+
     <div id="listaPedidos"></div>
 
     <script>
@@ -264,6 +286,90 @@
             doc.text(`Total (Cantidad × Costo): Gs. ${formatNumber(total)}`, 14, doc.lastAutoTable.finalY + 10);
 
             doc.save("compras_por_telefono.pdf");
+        }
+
+        async function descargarPDFporFechas() {
+            const desdeInput = document.getElementById('fechaDesde').value;
+            const hastaInput = document.getElementById('fechaHasta').value;
+
+            if (!desdeInput || !hastaInput) {
+                alert("Por favor selecciona ambas fechas.");
+                return;
+            }
+
+            const desde = new Date(desdeInput);
+            const hasta = new Date(hastaInput);
+            hasta.setHours(23, 59, 59, 999);
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFontSize(16);
+            doc.text(`Informe de pedidos del ${desdeInput} al ${hastaInput}`, 105, 20, null, null, "center");
+
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/pedidos?select=*&estado=eq.Pendiente&order=created_at.desc`, {
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                }
+            });
+
+            const pedidos = await response.json();
+
+            const pedidosFiltrados = pedidos.filter(p => {
+                const fechaPedido = new Date(p.created_at);
+                return fechaPedido >= desde && fechaPedido <= hasta;
+            });
+
+            if (pedidosFiltrados.length === 0) {
+                alert("No hay pedidos en ese rango de fechas.");
+                return;
+            }
+
+            let total = 0;
+
+            const rows = pedidosFiltrados.map(p => {
+                const subtotal = p.cantidad * p.costo;
+                total += subtotal;
+
+                return [
+                    p.tejido,
+                    p.tipocolor,
+                    formatNumber(p.cantidad),
+                    `Gs. ${formatNumber(p.costo)}`,
+                    `Gs. ${formatNumber(p.venta)}`,
+                    p.proveedor,
+                    new Date(p.created_at).toLocaleDateString(),
+                    p.estado
+                ];
+            });
+
+            doc.autoTable({
+                head: [[
+                    'Tejido', 'Tipo/Color', 'Cantidad', 'Precio Costo',
+                    'Precio Venta', 'Proveedor', 'Fecha', 'Estado'
+                ]],
+                body: rows,
+                startY: 30,
+                styles: {
+                    font: 'helvetica',
+                    fontSize: 9,
+                    textColor: 33
+                },
+                headStyles: {
+                    fillColor: [243, 244, 246],
+                    textColor: 55,
+                    fontStyle: 'bold'
+                },
+                alternateRowStyles: {
+                    fillColor: [250, 250, 250]
+                }
+            });
+
+            doc.setFontSize(12);
+            doc.text(`Total (Cantidad × Costo): Gs. ${formatNumber(total)}`, 14, doc.lastAutoTable.finalY + 10);
+
+            doc.save(`informe_pedidos_${desdeInput}_a_${hastaInput}.pdf`);
         }
 
         cargarPedidos();
